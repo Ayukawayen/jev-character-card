@@ -1,0 +1,1141 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jev 角色卡填寫器</title>
+<style>
+:root{
+  --bg:#f6f6f4; --panel:#fff; --ink:#1c1c1a; --muted:#6b6b66; --line:#dddcd6;
+  --accent:#3b5bdb; --accent-soft:#e7ecfd; --ok:#2f9e44; --warn:#e67700; --bad:#e03131;
+  --chip:#efeee9; --edit:#fff4e0; --radius:10px;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#161615; --panel:#202020; --ink:#ececea; --muted:#9a9a94; --line:#383836;
+    --accent:#7c93f5; --accent-soft:#232a4a; --chip:#2c2c2a; --edit:#3a2e18;}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+.wrap{max-width:1040px;margin:0 auto;padding:20px 16px 80px}
+h1{font-size:22px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 16px;font-size:13px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px}
+.panel>summary{cursor:pointer;font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px 14px;margin-top:10px}
+label.f{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted)}
+label.f.inline{flex-direction:row;align-items:center;gap:6px}
+input[type=text],input[type=password],input[type=number],select,textarea{
+  font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:6px 8px;width:100%}
+textarea{min-height:190px;resize:vertical}
+input[type=range]{width:100%}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:7px;padding:6px 12px}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button.primary:disabled{opacity:.5;cursor:not-allowed}
+button.ghost{border-color:transparent;background:transparent;color:var(--muted);padding:2px 6px}
+button.ghost:hover{color:var(--ink)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.muted{color:var(--muted)} .small{font-size:12.5px}
+.status{min-height:22px;font-size:13px;color:var(--muted)}
+.status.err{color:var(--bad);white-space:pre-wrap}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:18px 0 12px}
+.tab{border:none;border-bottom:2px solid transparent;border-radius:0;background:none;padding:8px 14px;color:var(--muted)}
+.tab.on{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.banner{background:var(--edit);border:1px solid var(--warn);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:13px}
+.info{background:var(--accent-soft);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:13px}
+.sec{margin:18px 0 8px;font-size:17px;font-weight:700;display:flex;align-items:baseline;gap:8px}
+.sec small{font-weight:400;color:var(--muted);font-size:12.5px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:10px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px}
+.card.wide{grid-column:1/-1}
+.card.edited{border-color:var(--warn);box-shadow:inset 3px 0 0 var(--warn)}
+.card h3{margin:0;font-size:14.5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.card h3 .en{font-weight:400;color:var(--muted);font-size:12px}
+.card .hint{color:var(--muted);font-size:12px;margin:2px 0 6px}
+.spacer{flex:1}
+.badge{font-size:11.5px;padding:1px 7px;border-radius:99px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.badge.hi{color:var(--ok);border-color:var(--ok)} .badge.mid{color:var(--warn);border-color:var(--warn)} .badge.lo{color:var(--bad);border-color:var(--bad)}
+.badge.edit{color:var(--warn);border-color:var(--warn);background:var(--edit)}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0}
+.chip{display:inline-flex;align-items:center;gap:5px;border-radius:99px;padding:2px 9px;font-size:13px;background:var(--chip);border:1px solid transparent;color:var(--ink)}
+.chip small{color:var(--muted);font-size:11px}
+.chip i{width:7px;height:7px;border-radius:50%;display:inline-block;background:var(--muted)}
+.chip i.hi{background:var(--ok)} .chip i.mid{background:var(--warn)} .chip i.lo{background:var(--bad)}
+.chip.sel{background:var(--accent-soft);border-color:var(--accent)}
+.chip.cand{background:transparent;border:1px dashed var(--line);color:var(--muted)}
+.chip.custom{background:var(--edit);border-color:var(--warn)}
+button.chip{padding:2px 9px}
+.sublabel{font-size:12px;color:var(--muted);margin:8px 0 2px}
+.bars{display:flex;flex-direction:column;gap:2px;margin-top:4px}
+.bar{display:grid;grid-template-columns:96px 1fr 40px;gap:6px;align-items:center;font-size:12.5px;text-align:left;border:none;background:none;padding:1px 2px;border-radius:5px;color:var(--ink);width:100%}
+button.bar:hover{background:var(--chip)}
+.bar .track{height:8px;background:var(--chip);border-radius:4px;overflow:hidden}
+.bar .fill{display:block;height:100%;background:var(--accent);opacity:.75}
+.bar.on .fill{opacity:1} .bar.on .lab{font-weight:700}
+.bar .pct{text-align:right;color:var(--muted)}
+.bar .lab{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.val{font-size:20px;font-weight:700;margin:2px 0}
+.val.none{color:var(--muted);font-weight:400;font-size:16px}
+.warnline{color:var(--warn);font-size:12px;margin-top:4px}
+pre{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;overflow:auto;max-height:340px;font-size:12px;margin:6px 0}
+.out textarea{min-height:360px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px}
+.hidden{display:none!important}
+.kv{display:flex;gap:6px;align-items:center}
+.kv input[type=number]{width:110px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Jev 角色卡填寫器</h1>
+  <p class="sub">貼上長篇自然語言描述 → Jev 判斷「性格 / 外貌」欄位 → 先看模型原始判斷（第一階段），再於副本上編輯（第二階段）。</p>
+
+  <details class="panel" id="settings" open>
+    <summary>連線與設定</summary>
+    <div class="grid">
+      <label class="f">OpenRouter API Key
+        <input type="password" id="apiKey" autocomplete="off" placeholder="sk-or-...">
+      </label>
+      <label class="f">Endpoint
+        <input type="text" id="endpoint" value="https://openrouter.ai/api/alpha/decisions">
+      </label>
+      <label class="f">Model
+        <input type="text" id="model" value="typesafe/jev-1.13">
+      </label>
+      <label class="f">角色名稱／指代（選填，多角色文本建議填寫）
+        <input type="text" id="subject" placeholder="例：林曉月">
+      </label>
+      <label class="f">長文分段長度（字元；0＝不分段）
+        <input type="number" id="chunkSize" value="3000" min="0" step="500">
+      </label>
+      <label class="f">關鍵字採用門檻：<b id="hiV">0.65</b>
+        <input type="range" id="thrHi" min="0.3" max="0.95" step="0.05" value="0.65">
+      </label>
+      <label class="f">候選下限：<b id="loV">0.30</b>
+        <input type="range" id="thrLo" min="0.05" max="0.6" step="0.05" value="0.3">
+      </label>
+      <label class="f">「已提及」判定（數值欄位）：<b id="stV">0.50</b>
+        <input type="range" id="thrStated" min="0.2" max="0.9" step="0.05" value="0.5">
+      </label>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label class="f inline"><input type="checkbox" id="remember"> 在本機記住 Key / Endpoint / Model</label>
+      <label class="f inline"><input type="checkbox" id="reverse" checked> 列舉題反序複核（降低選項順序偏誤）</label>
+      <label class="f inline"><input type="checkbox" id="mock"> 示範模式（不呼叫 API，用本機模擬回應）</label>
+    </div>
+    <p class="small muted" style="margin:8px 0 0">Key 只存在此頁面記憶體，僅送往上方 Endpoint；勾選「記住」才會寫入 localStorage。調整三個門檻只會重新解讀已取得的機率，不會重新呼叫 API。</p>
+  </details>
+
+  <div class="panel">
+    <label class="f">角色描述（長文）
+      <textarea id="text" placeholder="貼上角色的外貌、個性、背景等描述……"></textarea>
+    </label>
+    <div class="row" style="margin-top:8px">
+      <button class="primary" id="btnGen">生成第一階段</button>
+      <button id="btnCancel" class="hidden">取消</button>
+      <button id="btnSample" class="ghost">載入範例文字</button>
+      <span class="small muted" id="counter"></span>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div id="results" class="hidden">
+    <div class="tabs">
+      <button class="tab on" data-tab="p1">第一階段・模型判斷（唯讀）</button>
+      <button class="tab" data-tab="p2">第二階段・編輯副本</button>
+      <button class="tab" data-tab="out">角色卡輸出</button>
+    </div>
+    <div id="pane-p1"></div>
+    <div id="pane-p2" class="hidden"></div>
+    <div id="pane-out" class="hidden"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* =========================================================
+   工具
+   ========================================================= */
+const $ = (s, r = document) => r.querySelector(s);
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  if (attrs) for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false) continue;
+    if (k === 'class') el.className = v;
+    else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+    else if (v === true) el.setAttribute(k, '');
+    else el.setAttribute(k, v);
+  }
+  for (const kid of kids.flat(Infinity)) {
+    if (kid == null || kid === false) continue;
+    el.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+  }
+  return el;
+}
+const clone = (x) => JSON.parse(JSON.stringify(x));
+const pct = (p) => Math.round(p * 100) + '%';
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const NOT = 'not_stated';
+
+/* =========================================================
+   欄位 Schema（Personality / Appearance 及其次分類）
+   kind: keywords（Noul 詞彙表）/ enum（Choice）/ score（Score + 「是否提及」Noul 閘門）
+   en 欄位會送給模型；zh 只用於介面顯示。
+   ========================================================= */
+const V = (id, zh, en) => ({ id, zh, en });
+const O = (k, zh, d) => ({ k, zh, d: d ?? null });
+const NOTOPT = O(NOT, '未提及', 'The text gives no information about this');
+
+const SECTIONS = [
+  { id: 'personality', zh: '性格', en: 'Personality' },
+  { id: 'appearance', zh: '外貌', en: 'Appearance' },
+];
+
+const GROUPS = [
+  /* ---------- Personality ---------- */
+  { id: 'traits', section: 'personality', kind: 'keywords', zh: '性格特質', en: 'Traits',
+    hint: '預定義詞彙表；每個詞各一題 Noul，取機率達門檻者',
+    tpl: (S, w) => `The text shows that ${S} is ${w}.`,
+    vocab: [
+      V('brave', '勇敢', 'brave (faces danger or fear)'),
+      V('timid', '膽小', 'timid (easily frightened, avoids risk)'),
+      V('cautious', '謹慎', 'cautious (careful, thinks before acting)'),
+      V('reckless', '魯莽', 'reckless (acts without regard for danger)'),
+      V('curious', '好奇', 'curious (eager to learn or explore)'),
+      V('kind', '善良', 'kind-hearted (cares about others)'),
+      V('cruel', '殘忍', 'cruel (enjoys or accepts causing suffering)'),
+      V('gentle', '溫柔', 'gentle (soft and tender toward others)'),
+      V('stubborn', '固執', 'stubborn (refuses to change mind)'),
+      V('arrogant', '傲慢', 'arrogant (looks down on others)'),
+      V('humble', '謙遜', 'humble (modest, does not boast)'),
+      V('loyal', '忠誠', 'loyal (stays faithful to people or causes)'),
+      V('deceitful', '狡詐', 'deceitful (lies or manipulates)'),
+      V('honest', '誠實', 'honest (truthful and straightforward)'),
+      V('intelligent', '聰慧', 'intelligent (quick-witted, smart)'),
+      V('cheerful', '開朗', 'cheerful (bright and upbeat)'),
+      V('gloomy', '陰鬱', 'gloomy (dark, brooding mood)'),
+      V('calm', '沉著', 'calm (composed under pressure)'),
+      V('hot_tempered', '暴躁', 'hot-tempered (quick to anger)'),
+      V('playful', '俏皮', 'playful (fond of joking and fun)'),
+      V('sarcastic', '嘴毒／愛諷刺', 'sarcastic (uses biting or mocking remarks)'),
+      V('sentimental', '多愁善感', 'sentimental (easily moved by emotion)'),
+      V('romantic', '浪漫', 'romantic (idealizes love and affection)'),
+      V('jealous', '愛吃醋', 'jealous (resentful when others get attention or affection)'),
+      V('possessive', '佔有慾強', 'possessive (wants to control or keep people)'),
+      V('protective', '保護欲強', 'protective (strongly shields others from harm)'),
+      V('selfless', '無私', 'selfless (puts others before self)'),
+      V('selfish', '自私', 'selfish (puts own interests first)'),
+      V('ambitious', '有野心', 'ambitious (strongly driven to achieve)'),
+      V('lazy', '懶散', 'lazy (avoids effort)'),
+      V('diligent', '勤奮', 'diligent (hard-working)'),
+      V('perfectionist', '完美主義', 'perfectionist (demands flawless results)'),
+      V('absent_minded', '迷糊', 'absent-minded (forgetful, easily distracted)'),
+      V('clumsy', '笨拙', 'clumsy (awkward, prone to accidents)'),
+      V('optimistic', '樂觀', 'optimistic (expects good outcomes)'),
+      V('pessimistic', '悲觀', 'pessimistic (expects bad outcomes)'),
+      V('rebellious', '叛逆', 'rebellious (defies rules or authority)'),
+      V('obedient', '順從', 'obedient (follows orders and rules)'),
+      V('independent', '獨立', 'independent (self-reliant)'),
+      V('clingy', '黏人', 'clingy (constantly seeks closeness)'),
+      V('mysterious', '神祕', 'mysterious (secretive, hard to read)'),
+      V('eccentric', '古怪', 'eccentric (unusual or odd habits)'),
+      V('stoic', '隱忍', 'stoic (endures pain without complaint)'),
+      V('impulsive', '衝動', 'impulsive (acts on sudden urges)'),
+      V('vengeful', '記仇', 'vengeful (holds grudges and seeks revenge)'),
+      V('forgiving', '寬容', 'forgiving (lets go of wrongs)'),
+      V('greedy', '貪婪', 'greedy (wants more than needed)'),
+      V('responsible', '負責任', 'responsible (reliable, takes duties seriously)'),
+      V('tsundere', '傲嬌', 'tsundere (acts cold or hostile on the surface but is secretly caring)'),
+      V('yandere', '病嬌', 'yandere (obsessive affection that turns possessive or violent)'),
+      V('deadpan', '面無表情', 'deadpan (speaks flatly with no visible emotion)'),
+      V('mischievous', '愛惡作劇', 'mischievous (enjoys playing pranks)'),
+      V('charismatic', '有魅力', 'charismatic (naturally attracts and leads others)'),
+      V('paranoid', '多疑', 'suspicious (distrusts others, expects betrayal)'),
+      V('naive', '天真', 'naive (innocent, easily fooled)'),
+      V('cynical', '憤世嫉俗', 'cynical (distrusts people\'s motives)'),
+      V('serious', '嚴肅', 'serious (rarely jokes, stern manner)'),
+    ] },
+  { id: 'alignment', section: 'personality', kind: 'enum', zh: '陣營', en: 'Alignment',
+    hint: '單選（Choice）；含「未提及」',
+    q: (S) => `What is the moral and ethical outlook of ${S}? Answer not_stated if the text does not give enough information.`,
+    options: [
+      O('lawful_good', '守序善良', 'Does good and follows rules, codes or honor'),
+      O('neutral_good', '中立善良', 'Does good without strong attachment to rules'),
+      O('chaotic_good', '混亂善良', 'Does good by following own conscience, even against rules'),
+      O('lawful_neutral', '守序中立', 'Follows rules or tradition above good or evil'),
+      O('true_neutral', '絕對中立', 'Balanced, avoids taking sides'),
+      O('chaotic_neutral', '混亂中立', 'Follows personal freedom and whims'),
+      O('lawful_evil', '守序邪惡', 'Uses rules and order for selfish or harmful ends'),
+      O('neutral_evil', '中立邪惡', 'Selfish and harmful without regard for rules'),
+      O('chaotic_evil', '混亂邪惡', 'Destructive, cruel and unrestrained'),
+      NOTOPT] },
+  { id: 'speech', section: 'personality', kind: 'enum', zh: '說話風格', en: 'Speech style',
+    hint: '單選（Choice）',
+    q: (S) => `How does ${S} usually speak? Answer not_stated if the text does not say.`,
+    options: [
+      O('formal', '正式有禮', 'Polite, formal, courteous wording'),
+      O('casual', '隨性口語', 'Relaxed, colloquial everyday wording'),
+      O('gentle', '溫和體貼', 'Soft, soothing, caring tone'),
+      O('blunt', '直率尖銳', 'Direct, frank or harsh wording'),
+      O('playful', '俏皮戲謔', 'Teasing, joking, lively tone'),
+      O('cold', '冷淡簡短', 'Curt, detached, emotionless tone'),
+      O('archaic', '古風文雅', 'Old-fashioned, literary or classical wording'),
+      NOTOPT] },
+  { id: 'emotion', section: 'personality', kind: 'enum', zh: '情緒表達', en: 'Emotional expression',
+    hint: '單選（Choice）',
+    q: (S) => `How does ${S} express emotions? Answer not_stated if the text does not say.`,
+    options: [
+      O('expressive', '外放', 'Shows emotions openly and visibly'),
+      O('reserved', '內斂', 'Hides or suppresses emotions'),
+      O('volatile', '起伏劇烈', 'Emotions swing sharply and unpredictably'),
+      NOTOPT] },
+  ...[
+    ['extraversion', '外向度', 'Extraversion', 'outgoing or reserved', 'in social situations',
+      ['Strongly reserved; avoids social contact', 'Somewhat reserved', 'Balanced between reserved and sociable', 'Somewhat sociable', 'Strongly outgoing; seeks social contact'],
+      '內向 ←→ 外向'],
+    ['agreeableness', '親和度', 'Agreeableness', 'warm, cooperative or antagonistic', 'toward others',
+      ['Hostile; antagonistic toward others', 'Somewhat critical or distrustful', 'Neutral; neither warm nor hostile', 'Generally friendly and cooperative', 'Very warm, caring and cooperative'],
+      '敵對 ←→ 親切'],
+    ['conscientiousness', '嚴謹度', 'Conscientiousness', 'organized, disciplined or careless', 'in daily life',
+      ['Very careless and disorganized', 'Somewhat careless', 'Moderately organized', 'Fairly disciplined and reliable', 'Extremely disciplined and meticulous'],
+      '散漫 ←→ 嚴謹'],
+    ['stability', '情緒穩定度', 'Emotional stability', 'calm or emotionally volatile', 'under stress',
+      ['Highly anxious or volatile', 'Somewhat anxious or moody', 'Moderately steady', 'Fairly calm and steady', 'Extremely calm and unshakable'],
+      '易波動 ←→ 穩定'],
+    ['openness', '開放度', 'Openness', 'curious, imaginative or conventional', 'toward new ideas and experiences',
+      ['Very conventional; resists change', 'Somewhat conventional', 'Moderately open', 'Fairly curious and imaginative', 'Extremely imaginative; seeks novelty'],
+      '保守 ←→ 開放'],
+  ].map(([id, zh, en, what, ctx, lv, ends]) => ({
+    id, section: 'personality', kind: 'score', zh, en, hint: `1–5 量表（Score 取最高機率等級）｜${ends}`,
+    q: (S) => `How ${what} is ${S} ${ctx}?`,
+    gateQ: (S) => `The text shows how ${what} ${S} is ${ctx}.`,
+    levels: lv.map((d, i) => ({ d, rep: i + 1, zh: String(i + 1) })),
+    fmt: (v) => `${v} / 5`, unit: '/ 5', min: 1, max: 5, step: 1, slider: true,
+  })),
+
+  /* ---------- Appearance ---------- */
+  { id: 'species', section: 'appearance', kind: 'enum', zh: '種族', en: 'Species',
+    hint: '單選（Choice）',
+    q: (S) => `What species or race is ${S}?`,
+    options: [
+      O('human', '人類', 'An ordinary human, stated or clearly implied'),
+      O('elf', '精靈', 'An elf or elf-like being'),
+      O('demon', '惡魔／魔族', 'A demon or demonic being'),
+      O('beastkin', '獸人', 'A human with animal traits or a shapeshifter'),
+      O('android', '機械／人造人', 'A robot, android, cyborg or artificial being'),
+      O('undead', '不死者', 'A vampire, zombie, skeleton or other undead'),
+      O('dragon', '龍族', 'A dragon or dragon-kin'),
+      O('spirit', '靈體／妖精', 'A ghost, spirit, fairy or similar'),
+      O('other', '其他', 'Another species not listed'),
+      O(NOT, '未提及', 'Species is not mentioned')] },
+  { id: 'gender', section: 'appearance', kind: 'enum', zh: '外觀性別', en: 'Gender presentation',
+    hint: '單選（Choice）',
+    q: (S) => `What gender does ${S} present as?`,
+    options: [
+      O('male', '男性', null), O('female', '女性', null),
+      O('androgynous', '中性／模糊', 'Deliberately or naturally ambiguous'),
+      O('other', '其他', 'Another gender presentation'),
+      O(NOT, '未提及', 'Gender is not mentioned or implied')] },
+  { id: 'age', section: 'appearance', kind: 'score', zh: '年齡', en: 'Age',
+    hint: '先用 JS 正規表達式偵測明確數字；否則以 Score 的年齡層推估代表值（僅供參考，可手動修改）',
+    q: (S) => `How old is ${S}?`,
+    gateQ: (S) => `The text states or clearly implies the age or life stage of ${S}.`,
+    levels: [
+      { d: 'A young child', rep: 8 }, { d: 'A teenager', rep: 15 },
+      { d: 'A young adult, in the early twenties', rep: 22 }, { d: 'An adult, in the thirties', rep: 32 },
+      { d: 'A middle-aged adult', rep: 47 }, { d: 'An elderly person', rep: 70 }].map((l, i) => ({ ...l, zh: ['兒童', '青少年', '青年', '成年', '中年', '年長'][i] })),
+    fmt: (v) => `${v} 歲`, unit: '歲', min: 0, max: 200, step: 1,
+    detect: (t) => uniq([...t.matchAll(/(\d{1,3})\s*(?:歲|岁|years?[\s-]*old|yo\b|y\/o)/gi), ...t.matchAll(/年齡[:：\s]*(\d{1,3})/g)]
+      .map(m => +m[1]).filter(n => n >= 0 && n <= 120)) },
+  { id: 'height', section: 'appearance', kind: 'score', zh: '身高', en: 'Height',
+    hint: '先用 JS 偵測 cm／公分／公尺；否則以 Score 的相對高度推估代表值',
+    q: (S) => `How tall is ${S}, compared with typical adults?`,
+    gateQ: (S) => `The text states or clearly implies how tall ${S} is.`,
+    levels: [
+      { d: 'Very short compared with typical adults', rep: 145 }, { d: 'Shorter than average', rep: 157 },
+      { d: 'Average height', rep: 168 }, { d: 'Taller than average', rep: 180 }, { d: 'Very tall', rep: 193 }
+    ].map((l, i) => ({ ...l, zh: ['很矮', '偏矮', '普通', '偏高', '很高'][i] })),
+    fmt: (v) => `${v} cm`, unit: 'cm', min: 30, max: 300, step: 1,
+    detect: (t) => uniq([
+      ...[...t.matchAll(/(\d{2,3}(?:\.\d+)?)\s*(?:cm|公分|釐米|厘米)/gi)].map(m => +m[1]),
+      ...[...t.matchAll(/(\d(?:\.\d{1,2})?)\s*(?:公尺|米|m\b)/gi)].map(m => Math.round(+m[1] * 100)),
+    ].filter(n => n >= 100 && n <= 250)) },
+  { id: 'build', section: 'appearance', kind: 'enum', zh: '體型', en: 'Build',
+    hint: '單選（Choice）',
+    q: (S) => `What is the body build of ${S}?`,
+    options: [
+      O('slim', '纖細', 'Thin, slender'), O('athletic', '勻稱健美', 'Fit, toned, athletic'),
+      O('average', '普通', 'Average build'), O('muscular', '肌肉發達', 'Very muscular'),
+      O('curvy', '豐滿', 'Full-figured, curvy'), O('heavyset', '壯碩', 'Large, heavy or stocky'),
+      O(NOT, '未提及', 'Build is not mentioned')] },
+  { id: 'hair_color', section: 'appearance', kind: 'enum', zh: '髮色', en: 'Hair color',
+    hint: '單選（Choice）',
+    q: (S) => `What color is the hair of ${S}?`,
+    options: [
+      O('black', '黑'), O('brown', '棕'), O('blonde', '金'), O('red', '紅'), O('white', '白'),
+      O('silver', '銀'), O('gray', '灰'), O('blue', '藍'), O('pink', '粉'), O('purple', '紫'), O('green', '綠'),
+      O('multicolor', '多色／挑染', 'Several colors, highlights or gradient'),
+      O('other', '其他', 'A color not listed'), O(NOT, '未提及', 'Hair color is not mentioned')] },
+  { id: 'hair_length', section: 'appearance', kind: 'enum', zh: '髮長', en: 'Hair length',
+    hint: '單選（Choice）',
+    q: (S) => `How long is the hair of ${S}?`,
+    options: [
+      O('bald', '光頭', 'No hair or shaved'), O('very_short', '極短', 'Cropped close to the head'),
+      O('short', '短髮', 'Above the shoulders'), O('medium', '中長髮', 'Around the shoulders'),
+      O('long', '長髮', 'Below the shoulders'), O('very_long', '超長髮', 'Waist length or longer'),
+      O(NOT, '未提及', 'Hair length is not mentioned')] },
+  { id: 'hair_style', section: 'appearance', kind: 'keywords', zh: '髮型特徵', en: 'Hair style',
+    hint: '預定義詞彙表（Noul）',
+    tpl: (S, w) => `The text describes ${S} as having ${w}.`,
+    vocab: [
+      V('ponytail', '馬尾', 'a ponytail'), V('twin_tails', '雙馬尾', 'twin tails'),
+      V('braids', '辮子', 'braids'), V('bun', '髮髻', 'a hair bun'),
+      V('curly', '捲髮', 'curly hair'), V('wavy', '波浪髮', 'wavy hair'),
+      V('straight', '直髮', 'straight hair'), V('messy', '凌亂', 'messy, untidy hair'),
+      V('bangs', '瀏海', 'bangs (fringe)'), V('undercut', '削邊', 'an undercut'),
+      V('ahoge', '呆毛', 'an ahoge (a single strand sticking up)'),
+      V('hair_ornament', '髮飾', 'hair accessories such as ribbons or clips'),
+      V('spiky', '刺蝟頭', 'spiky hair'), V('bob', '鮑伯頭', 'a bob cut'),
+      V('dreadlocks', '髒辮', 'dreadlocks')] },
+  { id: 'eye_color', section: 'appearance', kind: 'enum', zh: '瞳色', en: 'Eye color',
+    hint: '單選（Choice）',
+    q: (S) => `What color are the eyes of ${S}?`,
+    options: [
+      O('black', '黑'), O('brown', '棕'), O('amber', '琥珀／金'), O('green', '綠'), O('blue', '藍'),
+      O('gray', '灰'), O('red', '紅'), O('purple', '紫'),
+      O('other', '其他', 'A color not listed'), O(NOT, '未提及', 'Eye color is not mentioned')] },
+  { id: 'skin', section: 'appearance', kind: 'enum', zh: '膚色', en: 'Skin tone',
+    hint: '單選（Choice）',
+    q: (S) => `What is the skin tone of ${S}?`,
+    options: [
+      O('very_pale', '蒼白', 'Very pale'), O('fair', '白皙', 'Fair, light'), O('tan', '小麥色', 'Tanned, olive'),
+      O('brown', '棕褐', 'Brown'), O('dark', '深色', 'Dark'),
+      O('unusual', '非自然色', 'Non-human color such as blue, green, gray or red'),
+      O(NOT, '未提及', 'Skin tone is not mentioned')] },
+  { id: 'features', section: 'appearance', kind: 'keywords', zh: '外觀特徵', en: 'Distinct features',
+    hint: '預定義詞彙表（Noul）',
+    tpl: (S, w) => `The text describes ${S} as having ${w}.`,
+    vocab: [
+      V('glasses', '眼鏡', 'glasses'), V('freckles', '雀斑', 'freckles'), V('scar', '疤痕', 'a visible scar'),
+      V('tattoo', '刺青', 'a tattoo'), V('piercings', '穿環／耳洞', 'piercings'), V('beard', '鬍鬚', 'a beard'),
+      V('mustache', '小鬍子', 'a mustache'), V('mole', '痣', 'a mole or beauty mark'),
+      V('fangs', '尖牙', 'fangs'), V('pointed_ears', '尖耳', 'pointed ears'), V('horns', '角', 'horns'),
+      V('tail', '尾巴', 'a tail'), V('wings', '翅膀', 'wings'), V('animal_ears', '獸耳', 'animal ears'),
+      V('eyepatch', '眼罩', 'an eyepatch'), V('heterochromia', '異色瞳', 'heterochromia (eyes of two different colors)'),
+      V('dimples', '酒窩', 'dimples'), V('glowing_eyes', '發光雙眼', 'glowing eyes'),
+      V('bandages', '繃帶', 'bandages'), V('prosthetic', '義肢／機械肢體', 'a prosthetic or mechanical limb'),
+      V('makeup', '妝容', 'visible makeup'), V('dark_circles', '黑眼圈', 'dark circles under the eyes'),
+      V('wrinkles', '皺紋', 'wrinkles')] },
+  { id: 'clothing', section: 'appearance', kind: 'keywords', zh: '服飾', en: 'Clothing',
+    hint: '預定義詞彙表（Noul）',
+    tpl: (S, w) => `The text describes ${S} as wearing ${w}.`,
+    vocab: [
+      V('school_uniform', '學生制服', 'a school uniform'), V('suit', '西裝', 'a suit'),
+      V('armor', '盔甲', 'armor'), V('robe', '長袍', 'a robe'), V('hoodie', '連帽衫', 'a hoodie'),
+      V('dress', '洋裝', 'a dress'), V('kimono', '和服', 'a kimono'),
+      V('military', '軍裝', 'a military uniform'), V('lab_coat', '白袍', 'a lab coat'),
+      V('cloak', '斗篷', 'a cloak or cape'), V('scarf', '圍巾', 'a scarf'), V('hat', '帽子', 'a hat'),
+      V('gloves', '手套', 'gloves'), V('boots', '靴子', 'boots'), V('jewelry', '飾品', 'jewelry or accessories'),
+      V('casual', '休閒服', 'casual everyday clothes'), V('leather_jacket', '皮夾克', 'a leather jacket'),
+      V('maid', '女僕裝', 'a maid outfit'), V('traditional', '傳統服飾', 'traditional Chinese clothing such as a qipao or hanfu'),
+      V('sportswear', '運動服', 'sportswear'), V('coat', '大衣／風衣', 'a long coat or trench coat'),
+      V('mask', '面具／口罩', 'a mask')] },
+  { id: 'tidy', section: 'appearance', kind: 'score', zh: '整潔度', en: 'Grooming',
+    hint: '1–4 量表（Score 取最高機率等級）',
+    q: (S) => `How neat and well-groomed does ${S} look?`,
+    gateQ: (S) => `The text describes how neat or well-groomed ${S} looks.`,
+    levels: ['Unkempt or disheveled', 'Casual, a bit untidy', 'Neat and tidy', 'Immaculate and polished']
+      .map((d, i) => ({ d, rep: i + 1, zh: String(i + 1) })),
+    fmt: (v) => `${v} / 4`, unit: '/ 4', min: 1, max: 4, step: 1, slider: true },
+];
+function uniq(a) { return [...new Set(a)]; }
+const GBY = Object.fromEntries(GROUPS.map(g => [g.id, g]));
+const enShort = (s) => s.replace(/\s*\(.*\)\s*$/, '');
+const optEn = (k) => k.replace(/_/g, ' ');
+
+/* =========================================================
+   請求建構（Fan-out：所有問題放進同一個請求）
+   ========================================================= */
+function buildQuestions(subject, reverse) {
+  const Q = {}, index = {};
+  const crit = (opts) => { const c = {}; for (const o of opts) c[o.k] = o.d; return c; };
+  for (const g of GROUPS) {
+    if (g.kind === 'keywords') {
+      for (const w of g.vocab) {
+        const id = `kw__${g.id}__${w.id}`;
+        Q[id] = { type: 'noul', instructions: g.tpl(subject, w.en) };
+        index[id] = { g: g.id, kind: 'kw', w: w.id };
+      }
+    } else if (g.kind === 'enum') {
+      Q[`ch__${g.id}`] = { type: 'choice', instructions: g.q(subject), criteria: crit(g.options) };
+      index[`ch__${g.id}`] = { g: g.id, kind: 'ch' };
+      if (reverse) {
+        Q[`ch__${g.id}__r`] = { type: 'choice', instructions: g.q(subject), criteria: crit([...g.options].reverse()) };
+        index[`ch__${g.id}__r`] = { g: g.id, kind: 'chr' };
+      }
+    } else {
+      Q[`sc__${g.id}`] = { type: 'score', instructions: g.q(subject), criteria: g.levels.map(l => l.d) };
+      Q[`sg__${g.id}`] = { type: 'noul', instructions: g.gateQ(subject) };
+      index[`sc__${g.id}`] = { g: g.id, kind: 'sc' };
+      index[`sg__${g.id}`] = { g: g.id, kind: 'sg' };
+    }
+  }
+  return { Q, index };
+}
+
+/* =========================================================
+   API 呼叫（OpenRouter alpha）與回應正規化
+   ========================================================= */
+class ApiError extends Error { constructor(status, body) { super(`HTTP ${status}：${String(body).slice(0, 400)}`); this.status = status; } }
+
+async function callApi({ endpoint, key, model, state, questions, signal }) {
+  const body = JSON.stringify({ model, state, questions });
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(endpoint, {
+      method: 'POST', signal, body,
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+    });
+    if (res.ok) return await res.json();
+    if ([429, 502, 503, 504, 529].includes(res.status) && attempt < 3) {
+      const ra = Number(res.headers.get('retry-after'));
+      await sleep((ra > 0 ? ra * 1000 : 1000 * 2 ** attempt) + Math.random() * 300);
+      continue;
+    }
+    throw new ApiError(res.status, await res.text());
+  }
+}
+
+function findAnswers(json, ids) {
+  const want = new Set(ids), seen = new Set();
+  function walk(o, depth) {
+    if (typeof o === 'string' && o.trim().startsWith('{')) { try { o = JSON.parse(o); } catch { return null; } }
+    if (!o || typeof o !== 'object' || depth > 7 || seen.has(o)) return null;
+    seen.add(o);
+    if (o.answers && typeof o.answers === 'object' && !Array.isArray(o.answers)) return o.answers;
+    const keys = Object.keys(o);
+    if (keys.some(k => want.has(k))) return o;
+    for (const k of keys) { const r = walk(o[k], depth + 1); if (r) return r; }
+    return null;
+  }
+  return walk(json, 0) || {};
+}
+function findUsage(json) {
+  const u = json?.usage || json?.data?.usage || {};
+  return { in: u.input_tokens ?? u.prompt_tokens ?? 0, out: u.output_tokens ?? u.completion_tokens ?? 0 };
+}
+
+/* =========================================================
+   聚合：多段結果 → 每欄位的原始機率（raw）
+   ========================================================= */
+const numOr = (x) => (typeof x === 'number' && isFinite(x) ? x : null);
+function noulOf(a) {
+  if (a == null) return null;
+  if (typeof a === 'number') return numOr(a);
+  return numOr(a.noul ?? a.probability ?? a.value);
+}
+function probsOf(a, keys) {
+  if (!a || typeof a !== 'object') return null;
+  const src = a.probabilities;
+  if (src && typeof src === 'object') {
+    const out = {}; let sum = 0;
+    for (const k of keys) { const v = Number(src[k] ?? 0); out[k] = isFinite(v) && v > 0 ? v : 0; sum += out[k]; }
+    if (sum > 0) { for (const k of keys) out[k] /= sum; return out; }
+  }
+  if (a.choice != null && keys.includes(a.choice)) { const o = {}; keys.forEach(k => o[k] = k === a.choice ? 1 : 0); return o; }
+  if (typeof a.score === 'number') {      // 只有 score 時：在相鄰兩級間線性分配
+    const lo = Math.max(0, Math.min(keys.length - 1, Math.floor(a.score))), hi = Math.min(keys.length - 1, lo + 1), f = a.score - lo;
+    const o = {}; keys.forEach(k => o[k] = 0); o[keys[lo]] += 1 - f; o[keys[hi]] += f; return o;
+  }
+  return null;
+}
+function scoreConf(p) {
+  const n = p.length, m = p.indexOf(Math.max(...p));
+  const spread = p.reduce((s, v, i) => s + v * Math.abs(i - m), 0);
+  const even = p.reduce((s, _, i) => s + Math.abs(i - (n - 1) / 2), 0) / n;
+  return even === 0 ? 1 : Math.max(0, Math.min(1, 1 - spread / even));
+}
+function choiceConf(p) { const n = p.length; return Math.max(0, Math.min(1, (n * Math.max(...p) - 1) / (n - 1))); }
+function argmaxKey(o) { let bk = null, bv = -1; for (const [k, v] of Object.entries(o)) if (v > bv) { bv = v; bk = k; } return bk; }
+
+/* 跨段合併 Choice：以「已提及質量」(1 - p(not_stated)) 加權 */
+function aggEnum(list, keys) {
+  const valid = list.map((p, i) => p ? { p, i } : null).filter(Boolean);
+  if (!valid.length) return null;
+  const ws = valid.map(({ p }) => 1 - (p[NOT] || 0));
+  const sumW = ws.reduce((a, b) => a + b, 0), S = Math.max(...ws);
+  const out = {}; keys.forEach(k => out[k] = 0);
+  if (sumW < 1e-9) { out[NOT] = 1; return { probs: out, idx: -1 }; }
+  for (const k of keys) if (k !== NOT) out[k] = S * valid.reduce((a, { p }) => a + (p[k] || 0), 0) / sumW;
+  out[NOT] = 1 - S;
+  return { probs: out, idx: valid[ws.indexOf(S)].i };
+}
+
+function aggregate(res, text) {
+  const raw = { fields: {}, missing: 0, chunks: res.length };
+  const A = (r, id) => r.answers[id];
+  for (const g of GROUPS) {
+    if (g.kind === 'keywords') {
+      raw.fields[g.id] = { items: g.vocab.map(w => {
+        const id = `kw__${g.id}__${w.id}`; let best = null, idx = -1;
+        res.forEach((r, i) => { const p = noulOf(A(r, id)); if (p != null && (best == null || p > best)) { best = p; idx = i; } });
+        if (best == null) { raw.missing++; best = 0; }
+        return { id: w.id, p: Math.min(1, Math.max(0, best)), chunk: idx };
+      }) };
+    } else if (g.kind === 'enum') {
+      const keys = g.options.map(o => o.k);
+      const per = res.map(r => ({ f: probsOf(A(r, `ch__${g.id}`), keys), b: probsOf(A(r, `ch__${g.id}__r`), keys) }));
+      const comb = per.map(({ f, b }) => f && b ? Object.fromEntries(keys.map(k => [k, (f[k] + b[k]) / 2])) : (f || b));
+      const main = aggEnum(comb, keys);
+      let conflict = false;
+      if (per.some(x => x.f) && per.some(x => x.b)) {
+        const F = aggEnum(per.map(x => x.f), keys), B = aggEnum(per.map(x => x.b), keys);
+        conflict = !!(F && B && argmaxKey(F.probs) !== argmaxKey(B.probs));
+      }
+      if (!main) { raw.missing++; const o = {}; keys.forEach(k => o[k] = k === NOT ? 1 : 0); raw.fields[g.id] = { probs: o, chunk: -1, conflict: false }; }
+      else raw.fields[g.id] = { probs: main.probs, chunk: main.idx, conflict };
+    } else {
+      const keys = g.levels.map((_, i) => String(i));
+      const per = res.map(r => ({ d: probsOf(A(r, `sc__${g.id}`), keys), g: noulOf(A(r, `sg__${g.id}`)) })).map((x, i) => ({ ...x, i }));
+      const valid = per.filter(x => x.d);
+      let dist, stated = 0, idx = -1;
+      if (!valid.length) { raw.missing++; dist = keys.map(() => 1 / keys.length); }
+      else {
+        let ws = valid.map(x => x.g == null ? 1 : x.g);
+        if (ws.reduce((a, b) => a + b, 0) < 1e-9) ws = ws.map(() => 1);
+        const sw = ws.reduce((a, b) => a + b, 0);
+        dist = keys.map(k => valid.reduce((a, x, j) => a + ws[j] * x.d[k], 0) / sw);
+        const gs = valid.map(x => x.g == null ? 1 : x.g);
+        stated = Math.max(...gs); idx = valid[gs.indexOf(stated)].i;
+      }
+      raw.fields[g.id] = { dist, stated, chunk: idx, hits: g.detect ? g.detect(text) : [] };
+    }
+  }
+  return raw;
+}
+
+/* =========================================================
+   推導：raw + 門檻設定 → 第一階段顯示用資料
+   ========================================================= */
+function derive(raw, set) {
+  const D = {};
+  for (const g of GROUPS) {
+    const f = raw.fields[g.id];
+    if (g.kind === 'keywords') {
+      const items = f.items.map(it => ({ ...it, conf: Math.abs(2 * it.p - 1) })).sort((a, b) => b.p - a.p);
+      D[g.id] = { items,
+        selected: items.filter(i => i.p >= set.hi).map(i => i.id),
+        cand: items.filter(i => i.p < set.hi && i.p >= set.lo).map(i => i.id) };
+    } else if (g.kind === 'enum') {
+      const opts = g.options.map(o => ({ k: o.k, p: f.probs[o.k] || 0 })).sort((a, b) => b.p - a.p);
+      D[g.id] = { opts, top: opts[0].k, p: opts[0].p, conf: choiceConf(opts.map(o => o.p)),
+        unset: opts[0].k === NOT, conflict: f.conflict, chunk: f.chunk };
+    } else {
+      const dist = f.dist, top = dist.indexOf(Math.max(...dist));
+      const exp = dist.reduce((s, p, i) => s + p * i, 0);
+      const guess = g.levels[top].rep;
+      let value = null, source = null;
+      if (f.hits.length === 1) { value = f.hits[0]; source = 'regex'; }
+      else if (f.stated >= set.stated) { value = guess; source = 'model'; }
+      D[g.id] = { dist, top, exp, conf: scoreConf(dist), stated: f.hits.length === 1 ? 1 : f.stated,
+        guess, value, source, hits: f.hits, chunk: f.chunk };
+    }
+  }
+  return D;
+}
+
+/* =========================================================
+   第二階段（可編輯副本）資料模型
+   ========================================================= */
+function initP2(D) {
+  const o = {};
+  for (const g of GROUPS) {
+    const d = D[g.id];
+    if (g.kind === 'keywords') o[g.id] = { sel: [...d.selected], custom: [] };
+    else if (g.kind === 'enum') o[g.id] = { v: d.unset ? null : d.top, custom: '' };
+    else o[g.id] = { v: d.value };
+  }
+  return o;
+}
+function normField(g, f) {
+  if (g.kind === 'keywords') return JSON.stringify({ s: [...f.sel].sort(), c: [...f.custom] });
+  if (g.kind === 'enum') return JSON.stringify({ v: f.v, c: f.v === '__custom' ? f.custom : '' });
+  return JSON.stringify({ v: f.v });
+}
+const fieldEdited = (g) => normField(g, S.p2[g.id]) !== normField(g, S.orig[g.id]);
+const editedCount = () => S.p2 ? GROUPS.filter(fieldEdited).length : 0;
+
+/* =========================================================
+   全域狀態
+   ========================================================= */
+const S = {
+  raw: null, D: null, orig: null, p2: null,
+  version: 0, p2Version: 0, tab: 'p1', busy: false, abort: null,
+  meta: null, lastReq: null, lastResp: null, lang: 'zh', hideEmpty: true,
+};
+function settings() {
+  return { hi: +$('#thrHi').value, lo: Math.min(+$('#thrLo').value, +$('#thrHi').value), stated: +$('#thrStated').value };
+}
+
+/* =========================================================
+   文字分段
+   ========================================================= */
+function splitText(text, size) {
+  if (!size || text.length <= size) return [{ idx: 0, text }];
+  const units = [];
+  for (const para of text.split(/\n+/)) {
+    if (!para.trim()) continue;
+    if (para.length <= size) { units.push(para); continue; }
+    for (const s of (para.match(/[^。！？!?\.]+[。！？!?\.]*/g) || [para])) {
+      if (s.length <= size) units.push(s);
+      else for (let i = 0; i < s.length; i += size) units.push(s.slice(i, i + size));
+    }
+  }
+  const chunks = []; let cur = '';
+  for (const u of units) {
+    if (cur && cur.length + u.length + 1 > size) { chunks.push(cur); cur = u; }
+    else cur = cur ? cur + '\n' + u : u;
+  }
+  if (cur) chunks.push(cur);
+  return chunks.map((t, idx) => ({ idx, text: t }));
+}
+
+/* =========================================================
+   示範模式：本機模擬 API（用同一份 schema 與正規化流程）
+   ========================================================= */
+function mockApi({ state, questions }, index) {
+  const text = String(state);
+  const hash = (s) => { let x = 2166136261; for (const c of s) { x ^= c.charCodeAt(0); x = Math.imul(x, 16777619); } return (x >>> 0) / 4294967295; };
+  const toks = (zh) => zh.split(/[／\/]/).map(s => s.trim()).filter(Boolean);
+  const hasZh = (zh) => toks(zh).some(t => text.includes(t) || (t.length > 1 && text.includes(t.replace(/^[愛有]/, ''))));
+  const answers = {};
+  for (const [id, q] of Object.entries(questions)) {
+    const m = index[id]; if (!m) continue; const g = GBY[m.g];
+    if (m.kind === 'kw') {
+      const w = g.vocab.find(v => v.id === m.w); const hit = hasZh(w.zh);
+      answers[id] = { type: 'noul', noul: +(hit ? 0.72 + 0.26 * hash(id) : 0.01 + 0.4 * Math.pow(hash(id + text.length), 3)).toFixed(3) };
+    } else if (m.kind === 'ch' || m.kind === 'chr') {
+      const probs = {}; let anyHit = false;
+      for (const o of g.options) {
+        const hit = o.k !== NOT && o.zh !== '其他' && hasZh(o.zh);
+        anyHit = anyHit || hit;
+        probs[o.k] = hit ? 3 + hash(id + o.k) : 0.05 + 0.1 * hash(id + o.k);
+      }
+      if (!anyHit) probs[NOT] = 6;
+      const tot = Object.values(probs).reduce((a, b) => a + b, 0);
+      for (const k of Object.keys(probs)) probs[k] = +(probs[k] / tot).toFixed(3);
+      answers[id] = { type: 'choice', choice: argmaxKey(probs), probabilities: probs, confidence: +choiceConf(Object.values(probs)).toFixed(3) };
+    } else if (m.kind === 'sg') {
+      const hit = g.detect ? g.detect(text).length > 0 : hash(id + text.length) > 0.3;
+      answers[id] = { type: 'noul', noul: +(hit ? 0.9 : 0.15 + 0.5 * hash(id + text.length)).toFixed(3) };
+    } else if (m.kind === 'sc') {
+      const n = g.levels.length, c = hash(id + text.length) * (n - 1), probs = {}; let tot = 0;
+      g.levels.forEach((_, i) => { const v = Math.exp(-Math.pow(i - c, 2) / 0.6); probs[String(i)] = v; tot += v; });
+      for (const k of Object.keys(probs)) probs[k] = +(probs[k] / tot).toFixed(3);
+      const score = Object.entries(probs).reduce((s, [k, p]) => s + +k * p, 0);
+      answers[id] = { type: 'score', score: +score.toFixed(2), probabilities: probs, confidence: +scoreConf(Object.values(probs)).toFixed(3) };
+    }
+  }
+  return { model: 'mock-jev', answers, usage: { input_tokens: Math.round(text.length * 1.3), output_tokens: Object.keys(answers).length * 10 } };
+}
+
+/* =========================================================
+   生成流程
+   ========================================================= */
+function setStatus(msg, err) { const el = $('#status'); el.textContent = msg || ''; el.className = 'status' + (err ? ' err' : ''); }
+function setBusy(b) {
+  S.busy = b; $('#btnGen').disabled = b; $('#btnCancel').classList.toggle('hidden', !b);
+}
+
+async function generate() {
+  const text = $('#text').value.trim();
+  const mock = $('#mock').checked, key = $('#apiKey').value.trim();
+  if (!text) return setStatus('請先輸入角色描述。', true);
+  if (!mock && !key) return setStatus('請輸入 OpenRouter API Key（或勾選示範模式）。', true);
+  if (S.p2 && editedCount() > 0 && !confirm(`第二階段有 ${editedCount()} 個欄位已被修改。重新生成會以新的第一階段結果覆蓋副本，確定嗎？`)) return;
+  persistConn();
+
+  const subjectName = $('#subject').value.trim();
+  const subject = subjectName ? `the character "${subjectName}"` : 'the main character';
+  const chunkSize = Math.max(0, parseInt($('#chunkSize').value, 10) || 0);
+  const chunks = splitText(text, chunkSize);
+  const { Q, index } = buildQuestions(subject, $('#reverse').checked);
+  const ids = Object.keys(Q);
+  const endpoint = $('#endpoint').value.trim(), model = $('#model').value.trim();
+
+  const ctl = new AbortController(); S.abort = ctl; setBusy(true);
+  const t0 = performance.now(); let done = 0;
+  const res = new Array(chunks.length);
+  setStatus(`送出 ${chunks.length} 個請求（每個含 ${ids.length} 題）…`);
+  try {
+    let next = 0;
+    const worker = async () => {
+      while (next < chunks.length) {
+        const i = next++;
+        const payload = { model, state: chunks[i].text, questions: Q };
+        const json = mock ? (await sleep(250), mockApi(payload, index))
+          : await callApi({ endpoint, key, model, state: chunks[i].text, questions: Q, signal: ctl.signal });
+        if (i === 0) S.lastResp = json;
+        res[i] = { answers: findAnswers(json, ids), usage: findUsage(json), model: json.model };
+        setStatus(`已完成 ${++done}/${chunks.length} 段…`);
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(3, chunks.length) }, worker));
+  } catch (e) {
+    setBusy(false);
+    if (e.name === 'AbortError') return setStatus('已取消。');
+    const hint = e instanceof ApiError ? '' : '\n（若是 Failed to fetch：可能是網路／CORS 或 Endpoint 有誤，可展開「請求檢視」複製 curl 對照）';
+    S.lastReq = { endpoint, model, state: chunks[0].text, questions: Q };
+    renderResults();
+    return setStatus('呼叫失敗：' + e.message + hint, true);
+  }
+  setBusy(false);
+
+  const raw = aggregate(res, text);
+  S.raw = raw; S.version++;
+  S.D = derive(raw, settings());
+  S.orig = initP2(S.D); S.p2 = clone(S.orig); S.p2Version = S.version;
+  S.chunks = chunks; S.subject = subjectName;
+  S.lastReq = { endpoint, model, state: chunks[0].text, questions: Q };
+  S.meta = {
+    model: res.find(r => r?.model)?.model || model, chunks: chunks.length, questions: ids.length,
+    tin: res.reduce((a, r) => a + r.usage.in, 0), tout: res.reduce((a, r) => a + r.usage.out, 0),
+    secs: ((performance.now() - t0) / 1000).toFixed(1), missing: raw.missing, mock,
+  };
+  S.inputText = text;
+  setStatus(`完成（${S.meta.secs}s）。${raw.missing ? `⚠ ${raw.missing} 個答案缺漏，已視為 0／未提及。` : ''}`, raw.missing > 0);
+  $('#results').classList.remove('hidden');
+  setTab('p1');
+}
+
+/* 門檻調整：只重新解讀，不重新呼叫 API */
+function rederive() {
+  if (!S.raw) return;
+  const dirty = editedCount() > 0;
+  S.D = derive(S.raw, settings()); S.version++;
+  if (!dirty) { S.orig = initP2(S.D); S.p2 = clone(S.orig); S.p2Version = S.version; }
+  renderResults();
+}
+
+/* =========================================================
+   UI 元件
+   ========================================================= */
+const confClass = (c) => c >= 0.8 ? 'hi' : c >= 0.5 ? 'mid' : 'lo';
+const confWord = (c) => c >= 0.8 ? '高' : c >= 0.5 ? '中' : '低';
+const confBadge = (c, label = '信心') => h('span', { class: 'badge ' + confClass(c), title: '由機率分佈計算的信心值（0–1）' }, `${label} ${c.toFixed(2)}・${confWord(c)}`);
+const srcTag = (idx) => (S.meta && S.meta.chunks > 1 && idx >= 0) ? `§${idx + 1}` : '';
+
+function bars(items, { onPick, on } = {}) {
+  return h('div', { class: 'bars' }, items.map(it => {
+    const inner = [h('span', { class: 'lab', title: it.label }, it.label),
+      h('span', { class: 'track' }, h('span', { class: 'fill', style: `width:${(it.p * 100).toFixed(1)}%` })),
+      h('span', { class: 'pct' }, pct(it.p))];
+    const cls = 'bar' + (on === it.key ? ' on' : '');
+    return onPick ? h('button', { class: cls, onclick: () => onPick(it.key), title: '點擊採用此選項' }, inner) : h('div', { class: cls }, inner);
+  }));
+}
+
+function cardShell(g, mode, body, badges) {
+  const edited = mode === 'p2' && fieldEdited(g);
+  const head = h('h3', null, g.zh, h('span', { class: 'en' }, g.en), h('span', { class: 'spacer' }), badges,
+    edited && h('span', { class: 'badge edit' }, '已修改'),
+    edited && h('button', { class: 'ghost', title: '重置此欄位為第一階段結果', onclick: () => { S.p2[g.id] = clone(S.orig[g.id]); refreshCard(g.id); } }, '↺ 重置'));
+  return h('div', { class: 'card' + (g.kind === 'keywords' ? ' wide' : '') + (edited ? ' edited' : ''), 'data-gid': g.id },
+    head, h('div', { class: 'hint' }, g.hint), body);
+}
+
+/* ---------- keywords ---------- */
+function chipTitle(g, w, it) {
+  return `${w.zh}｜${enShort(w.en)}\n機率 ${pct(it.p)}　信心 ${it.conf.toFixed(2)}${srcTag(it.chunk) ? `\n最高分出現於 ${srcTag(it.chunk)}` : ''}`;
+}
+function renderKeywords(g, mode) {
+  const d = S.D[g.id], W = Object.fromEntries(g.vocab.map(w => [w.id, w])), I = Object.fromEntries(d.items.map(i => [i.id, i]));
+  const chip = (it, cls, onclick, extra) => {
+    const w = W[it.id];
+    return h(onclick ? 'button' : 'span', { class: `chip ${cls}`, title: chipTitle(g, w, it), onclick },
+      h('i', { class: confClass(it.conf) }), w.zh, h('small', null, pct(it.p) + (srcTag(it.chunk) ? ' ' + srcTag(it.chunk) : '')), extra);
+  };
+  if (mode === 'p1') {
+    const rest = d.items.length - d.selected.length - d.cand.length;
+    return cardShell(g, mode, [
+      h('div', { class: 'sublabel' }, `採用（機率 ≥ ${settings().hi.toFixed(2)}）`),
+      h('div', { class: 'chips' }, d.selected.length ? d.selected.map(id => chip(I[id], 'sel')) : h('span', { class: 'muted small' }, '無')),
+      d.cand.length > 0 && [h('div', { class: 'sublabel' }, `候選（${settings().lo.toFixed(2)} – ${settings().hi.toFixed(2)}）`),
+        h('div', { class: 'chips' }, d.cand.map(id => chip(I[id], 'cand')))],
+      h('div', { class: 'small muted' }, `其餘 ${rest} 項低於候選下限`),
+    ], h('span', { class: 'badge' }, `採用 ${d.selected.length}・候選 ${d.cand.length}`));
+  }
+  const f = S.p2[g.id], sel = new Set(f.sel), orig = new Set(S.orig[g.id].sel);
+  const toggle = (id) => { sel.has(id) ? f.sel.splice(f.sel.indexOf(id), 1) : f.sel.push(id); refreshCard(g.id); };
+  const selList = d.items.filter(i => sel.has(i.id));
+  const candList = d.items.filter(i => !sel.has(i.id) && (i.p >= settings().lo || orig.has(i.id)));
+  const restList = d.items.filter(i => !sel.has(i.id) && !candList.includes(i));
+  const inp = h('input', { type: 'text', class: 'custom-in', placeholder: '自訂關鍵字（無信心值）', style: 'max-width:200px' });
+  const addCustom = () => { const v = inp.value.trim(); if (v && !f.custom.includes(v)) { f.custom.push(v); refreshCard(g.id, true); } };
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addCustom(); } });
+  const addSel = h('select', { style: 'max-width:200px', onchange: (e) => { if (e.target.value) toggle(e.target.value); } },
+    h('option', { value: '' }, `從詞彙表新增…（${restList.length}）`),
+    restList.map(i => h('option', { value: i.id }, `${W[i.id].zh}　${pct(i.p)}`)));
+  return cardShell(g, mode, [
+    h('div', { class: 'sublabel' }, `已選（點擊移除）`),
+    h('div', { class: 'chips' }, [
+      ...selList.map(it => chip(it, 'sel', () => toggle(it.id), !orig.has(it.id) ? h('small', null, '＋新增') : null)),
+      ...f.custom.map(c => h('button', { class: 'chip custom', title: '自訂，點擊移除', onclick: () => { f.custom.splice(f.custom.indexOf(c), 1); refreshCard(g.id); } }, c, h('small', null, '自訂 ✕'))),
+      !selList.length && !f.custom.length && h('span', { class: 'muted small' }, '無'),
+    ]),
+    candList.length > 0 && [h('div', { class: 'sublabel' }, '候選／已移除（點擊加入）'),
+      h('div', { class: 'chips' }, candList.map(it => chip(it, 'cand', () => toggle(it.id), orig.has(it.id) ? h('small', null, '已移除') : null)))],
+    h('div', { class: 'row', style: 'margin-top:6px' }, addSel, inp, h('button', { onclick: addCustom }, '加入')),
+  ], h('span', { class: 'badge' }, `已選 ${f.sel.length + f.custom.length}`));
+}
+
+/* ---------- enum ---------- */
+function renderEnum(g, mode) {
+  const d = S.D[g.id], L = Object.fromEntries(g.options.map(o => [o.k, o.zh]));
+  const top5 = d.opts.slice(0, 5).map(o => ({ key: o.k, label: L[o.k], p: o.p }));
+  const badges = [confBadge(d.conf), d.chunk >= 0 && srcTag(d.chunk) && h('span', { class: 'badge', title: '主要依據的段落' }, srcTag(d.chunk))];
+  const warn = d.conflict && h('div', { class: 'warnline' }, '⚠ 正序與反序選項的答案不一致（選項順序敏感），請人工確認');
+  if (mode === 'p1') {
+    return cardShell(g, mode, [
+      h('div', { class: 'val' + (d.unset ? ' none' : '') }, d.unset ? '未提及' : L[d.top]),
+      bars(top5), warn], badges);
+  }
+  const f = S.p2[g.id];
+  const cur = f.v === '__custom' ? '__custom' : (f.v ?? NOT);
+  const sel = h('select', { onchange: (e) => { f.v = e.target.value === NOT ? null : e.target.value; refreshCard(g.id, f.v === '__custom'); } },
+    d.opts.map(o => h('option', { value: o.k, selected: o.k === cur }, `${L[o.k]}　${pct(o.p)}`)),
+    h('option', { value: '__custom', selected: cur === '__custom' }, '自訂…'));
+  const o0 = S.orig[g.id].v;
+  return cardShell(g, mode, [
+    sel,
+    f.v === '__custom' && h('input', { type: 'text', class: 'custom-in', value: f.custom, placeholder: '輸入自訂值', style: 'margin-top:6px',
+      oninput: (e) => { f.custom = e.target.value; }, onchange: () => refreshCard(g.id) }),
+    h('div', { class: 'small muted', style: 'margin:4px 0' }, `原始：${o0 == null ? '未提及' : L[o0]}`),
+    bars(top5, { onPick: (k) => { f.v = k === NOT ? null : k; refreshCard(g.id); }, on: f.v ?? NOT }), warn], badges);
+}
+
+/* ---------- score ---------- */
+function renderScore(g, mode) {
+  const d = S.D[g.id];
+  const levels = g.levels.map((l, i) => ({ key: String(i), label: `${l.zh}（${g.fmt(l.rep)}）`, p: d.dist[i], rep: l.rep }));
+  const badges = [confBadge(d.conf),
+    h('span', { class: 'badge ' + (d.stated >= settings().stated ? '' : 'lo'), title: '另一題 Noul：文字是否提到此資訊' }, `提及 ${pct(d.stated)}`),
+    srcTag(d.chunk) && h('span', { class: 'badge' }, srcTag(d.chunk))];
+  const srcNote = d.source === 'regex' ? `由文字偵測：${g.fmt(d.value)}` : d.source === 'model' ? `模型推估（${g.levels[d.top].zh}代表值）` : null;
+  const hitsNote = d.hits.length > 1 && h('div', { class: 'small muted' }, `文字中偵測到多個數字：${d.hits.map(g.fmt).join('、')}（未自動採用）`);
+  if (mode === 'p1') {
+    return cardShell(g, mode, [
+      d.value != null ? h('div', { class: 'val' }, g.fmt(d.value)) : h('div', { class: 'val none' }, '未提及'),
+      h('div', { class: 'small muted' }, srcNote || `推測值 ${g.fmt(d.guess)}（提及機率低於門檻，未採用）`),
+      hitsNote, bars(levels)], badges);
+  }
+  const f = S.p2[g.id], o0 = S.orig[g.id].v;
+  const set = (v) => { f.v = v; refreshCard(g.id); };
+  const num = h('input', { type: 'number', min: g.min, max: g.max, step: g.step, value: f.v ?? '', placeholder: '未填',
+    onchange: (e) => set(e.target.value === '' ? null : Math.max(g.min, Math.min(g.max, +e.target.value))) });
+  let slider = null;
+  if (g.slider) {
+    const lab = h('span', { class: 'small muted' }, f.v == null ? '—' : g.fmt(f.v));
+    slider = h('div', null, h('input', { type: 'range', min: g.min, max: g.max, step: 1, value: f.v ?? Math.round((g.min + g.max) / 2),
+      oninput: (e) => { lab.textContent = g.fmt(+e.target.value); }, onchange: (e) => set(+e.target.value) }), lab);
+  }
+  return cardShell(g, mode, [
+    h('div', { class: 'kv' }, num, h('span', { class: 'small muted' }, g.unit),
+      f.v != null && h('button', { class: 'ghost', onclick: () => set(null) }, '清除'),
+      f.v == null && h('button', { class: 'ghost', title: '採用推測值', onclick: () => set(d.guess) }, `套用推測 ${g.fmt(d.guess)}`)),
+    slider,
+    h('div', { class: 'small muted', style: 'margin:4px 0' }, `原始：${o0 == null ? '未提及' : g.fmt(o0)}${srcNote ? '（' + srcNote + '）' : ''}`),
+    d.hits.length > 0 && h('div', { class: 'chips' }, h('span', { class: 'small muted' }, '文字中偵測：'),
+      d.hits.map(v => h('button', { class: 'chip cand', onclick: () => set(v) }, g.fmt(v)))),
+    bars(levels, { onPick: (k) => set(g.levels[+k].rep), on: (() => { const i = g.levels.findIndex(l => l.rep === f.v); return i >= 0 ? String(i) : null; })() }),
+  ], badges);
+}
+
+function renderField(g, mode) {
+  return g.kind === 'keywords' ? renderKeywords(g, mode) : g.kind === 'enum' ? renderEnum(g, mode) : renderScore(g, mode);
+}
+
+function refreshCard(gid, focusCustom) {
+  const old = document.querySelector(`#pane-p2 [data-gid="${gid}"]`);
+  if (old) {
+    const neu = renderField(GBY[gid], 'p2'); old.replaceWith(neu);
+    if (focusCustom) neu.querySelector('.custom-in')?.focus();
+  }
+  updateP2Toolbar();
+}
+
+/* =========================================================
+   各分頁
+   ========================================================= */
+function sectionsView(mode) {
+  return SECTIONS.flatMap(sec => [
+    h('div', { class: 'sec' }, sec.zh, h('small', null, sec.en)),
+    h('div', { class: 'cards' }, GROUPS.filter(g => g.section === sec.id).map(g => renderField(g, mode))),
+  ]);
+}
+
+function renderP1() {
+  const m = S.meta, pane = $('#pane-p1'); pane.replaceChildren();
+  if (!S.D) return pane.append(h('div', { class: 'info' }, S.lastReq ? '尚無結果（請求失敗，見上方錯誤）。可展開下方「請求檢視」除錯。' : '尚無結果。'));
+  pane.append(h('div', { class: 'info' },
+    `模型 ${m.model}${m.mock ? '（示範模式，非真實判斷）' : ''}｜${m.chunks} 段 × ${m.questions} 題｜輸入 ${m.tin} / 輸出 ${m.tout} tokens｜${m.secs}s｜`,
+    '此頁為模型原始判斷，唯讀；請到「第二階段」編輯副本。',
+    m.chunks > 1 && h('details', { style: 'margin-top:6px' }, h('summary', null, `段落對照（§ 標記對應）`),
+      S.chunks.map(c => h('div', { class: 'small', style: 'margin:4px 0' }, h('b', null, `§${c.idx + 1} `), c.text.slice(0, 120) + (c.text.length > 120 ? '…' : ''))))),
+    h('div', { class: 'small muted', style: 'margin-bottom:6px' },
+      '信心：Choice／Score 取自機率分佈；Noul 以 |2p−1| 換算（p 為「是」的機率）。長文分段時，詞彙取各段最大機率，列舉／數值以「已提及質量」加權合併。'),
+    ...sectionsView('p1'));
+}
+
+function updateP2Toolbar() {
+  const n = editedCount(); const el = $('#p2-count'); if (el) el.textContent = n ? `已修改 ${n} 個欄位` : '尚未修改';
+  const stale = $('#p2-stale'); if (stale) stale.classList.toggle('hidden', S.p2Version === S.version);
+}
+function renderP2() {
+  const pane = $('#pane-p2'); pane.replaceChildren();
+  if (!S.D) return pane.append(h('div', { class: 'info' }, '請先生成第一階段。'));
+  pane.append(
+    h('div', { class: 'info' }, '這是第一階段的獨立副本：編輯只影響此頁與輸出，不會改動第一階段。點選長條可直接採用某個選項。'),
+    h('div', { class: 'banner', id: 'p2-stale' }, '第一階段已因門檻調整而更新，但此副本含有你的修改，所以沒有自動覆蓋。 ',
+      h('button', { onclick: () => { if (confirm('以最新第一階段重建副本？目前修改將遺失。')) { S.orig = initP2(S.D); S.p2 = clone(S.orig); S.p2Version = S.version; renderP2(); } } }, '以最新第一階段重建副本')),
+    h('div', { class: 'row', style: 'margin-bottom:8px' },
+      h('span', { class: 'badge', id: 'p2-count' }, ''),
+      h('button', { onclick: () => { if (editedCount() === 0 || confirm('將所有欄位重置為第一階段結果？')) { S.p2 = clone(S.orig); renderP2(); } } }, '↺ 全部重置')),
+    ...sectionsView('p2'));
+  updateP2Toolbar();
+}
+
+/* ---------- 匯出 ---------- */
+function p2Value(g, lang) {
+  const f = S.p2[g.id];
+  if (g.kind === 'keywords') {
+    const W = Object.fromEntries(g.vocab.map(w => [w.id, w]));
+    const order = S.D[g.id].items.map(i => i.id).filter(id => f.sel.includes(id));
+    const a = order.map(id => lang === 'en' ? enShort(W[id].en) : W[id].zh).concat(f.custom);
+    return a.length ? a : null;
+  }
+  if (g.kind === 'enum') {
+    if (f.v == null) return null;
+    if (f.v === '__custom') return f.custom.trim() || null;
+    const o = g.options.find(o => o.k === f.v); return lang === 'en' ? optEn(o.k) : o.zh;
+  }
+  return f.v == null ? null : f.v;
+}
+function buildMarkdown(lang, hideEmpty) {
+  const name = S.subject || (lang === 'en' ? 'Character' : '角色');
+  const L = (g) => lang === 'en' ? g.en : g.zh;
+  const lines = [`# ${name}`];
+  for (const sec of SECTIONS) {
+    lines.push('', `## ${lang === 'en' ? sec.en : sec.zh}`);
+    for (const g of GROUPS.filter(g => g.section === sec.id)) {
+      const v = p2Value(g, lang);
+      if (v == null && hideEmpty) continue;
+      const txt = v == null ? (lang === 'en' ? '(not stated)' : '（未提及）')
+        : Array.isArray(v) ? v.join(lang === 'en' ? ', ' : '、') : g.kind === 'score' ? g.fmt(v) : v;
+      lines.push(`- ${L(g)}：${txt}`.replace('：', lang === 'en' ? ': ' : '：'));
+    }
+  }
+  return lines.join('\n');
+}
+function buildJson(hideEmpty) {
+  const out = { name: S.subject || null };
+  for (const sec of SECTIONS) {
+    out[sec.id] = {};
+    for (const g of GROUPS.filter(g => g.section === sec.id)) {
+      const f = S.p2[g.id]; let v;
+      if (g.kind === 'keywords') {
+        const ids = S.D[g.id].items.map(i => i.id).filter(id => f.sel.includes(id));
+        v = ids.length || f.custom.length ? { keywords: ids, custom: f.custom } : null;
+      } else if (g.kind === 'enum') v = f.v == null ? null : f.v === '__custom' ? { custom: f.custom } : f.v;
+      else v = f.v;
+      if (v == null && hideEmpty) continue;
+      out[sec.id][g.id] = v;
+    }
+  }
+  return out;
+}
+function renderOut() {
+  const pane = $('#pane-out'); pane.replaceChildren();
+  if (!S.D) return pane.append(h('div', { class: 'info' }, '請先生成第一階段。'));
+  const ta = h('textarea', { readonly: true });
+  let fmt = 'md';
+  const refresh = () => {
+    ta.value = fmt === 'md' ? buildMarkdown(S.lang, S.hideEmpty) : JSON.stringify(buildJson(S.hideEmpty), null, 2);
+  };
+  const mk = (label, val, cur, fn) => h('label', { class: 'f inline' }, label,
+    h('select', { onchange: (e) => { fn(e.target.value); refresh(); }, style: 'width:auto' }, val.map(([v, t]) => h('option', { value: v, selected: v === cur }, t))));
+  pane.append(h('div', { class: 'info' }, '輸出內容取自「第二階段」目前的狀態。'),
+    h('div', { class: 'row', style: 'margin-bottom:8px' },
+      mk('格式', [['md', 'Markdown'], ['json', 'JSON']], fmt, v => fmt = v),
+      mk('Markdown 語言', [['zh', '繁體中文'], ['en', 'English']], S.lang, v => S.lang = v),
+      h('label', { class: 'f inline' }, h('input', { type: 'checkbox', checked: S.hideEmpty, onchange: (e) => { S.hideEmpty = e.target.checked; refresh(); } }), '省略未提及欄位'),
+      h('button', { onclick: async () => { try { await navigator.clipboard.writeText(ta.value); setStatus('已複製。'); } catch { ta.select(); document.execCommand('copy'); setStatus('已複製。'); } } }, '複製'),
+      h('button', { onclick: () => {
+        const a = h('a', { href: URL.createObjectURL(new Blob([ta.value], { type: 'text/plain' })), download: fmt === 'md' ? 'character-card.md' : 'character-card.json' });
+        document.body.append(a); a.click(); a.remove(); } }, '下載')),
+    h('div', { class: 'out' }, ta));
+  refresh();
+}
+
+/* ---------- 請求檢視 ---------- */
+function renderInspector() {
+  document.querySelector('#inspector')?.remove();
+  if (!S.lastReq) return;
+  const r = S.lastReq;
+  const shown = { model: r.model, state: r.state.length > 160 ? r.state.slice(0, 160) + '…（略）' : r.state, questions: r.questions };
+  const full = JSON.stringify({ model: r.model, state: r.state, questions: r.questions });
+  const curl = `curl ${r.endpoint} \\\n  -H "Content-Type: application/json" \\\n  -H "Authorization: Bearer $OPENROUTER_API_KEY" \\\n  -d '${full.replace(/'/g, "'\\''")}'`;
+  $('#results').append(h('details', { class: 'panel', id: 'inspector', style: 'margin-top:18px' },
+    h('summary', null, '請求檢視／原始回應（除錯用）'),
+    h('div', { class: 'row', style: 'margin:8px 0' }, h('button', { onclick: () => navigator.clipboard?.writeText(curl).then(() => setStatus('已複製 curl（第 1 段）。')) }, '複製 curl（第 1 段）')),
+    h('div', { class: 'small muted' }, 'Request（第 1 段；Key 不會顯示）'), h('pre', null, JSON.stringify(shown, null, 1)),
+    S.lastResp && [h('div', { class: 'small muted' }, 'Response（第 1 段）'), h('pre', null, JSON.stringify(S.lastResp, null, 1).slice(0, 20000))]));
+}
+
+function renderResults() {
+  $('#results').classList.remove('hidden');
+  renderP1(); renderP2(); renderOut(); renderInspector(); setTab(S.tab, true);
+}
+function setTab(t, quiet) {
+  S.tab = t;
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  for (const id of ['p1', 'p2', 'out']) $('#pane-' + id).classList.toggle('hidden', id !== t);
+  if (!quiet) { if (t === 'p1') renderP1(); else if (t === 'p2') renderP2(); else renderOut(); renderInspector(); }
+  else if (t === 'p1' || t === 'p2' || t === 'out') { /* 已由 renderResults 繪製 */ }
+}
+
+/* =========================================================
+   初始化
+   ========================================================= */
+const SAMPLE = `林曉月，17歲的高中二年級學生，身高160公分左右，有著一頭及腰的銀白色長髮，平常綁成雙馬尾，瀏海齊整。她的瞳色是淺藍色，鼻樑上架著一副圓框眼鏡，左眼下有一顆淚痣。她總是穿著整潔的深藍色學生制服，搭配紅色圍巾。
+
+個性上，她表面冷淡、嘴巴很毒，常常用諷刺的語氣回話，但其實非常善良，會偷偷照顧受傷的流浪貓。她很容易吃醋，一看到朋友和別人走得近就會鬧彆扭，也有點固執，認定的事情不會輕易改變。面對陌生人時她很內向，話不多，但對信任的人會展現出溫柔的一面。她做事一絲不苟，筆記永遠整整齊齊，是班上公認的優等生。
+
+另外，她其實很怕黑，遇到突發狀況會慌張到說不出話，只有在好朋友面前才會笑得很開朗。`;
+
+function persistConn() {
+  try {
+    if ($('#remember').checked) localStorage.setItem('jevcard.conn', JSON.stringify({ key: $('#apiKey').value, endpoint: $('#endpoint').value, model: $('#model').value }));
+    else localStorage.removeItem('jevcard.conn');
+  } catch {}
+}
+function init() {
+  try {
+    const c = JSON.parse(localStorage.getItem('jevcard.conn') || 'null');
+    if (c) { $('#apiKey').value = c.key || ''; $('#endpoint').value = c.endpoint || $('#endpoint').value; $('#model').value = c.model || $('#model').value; $('#remember').checked = true; }
+  } catch {}
+  const upd = () => { $('#counter').textContent = `${$('#text').value.length} 字元`
+    + ($('#text').value.length > 12000 && +$('#chunkSize').value === 0 ? '｜⚠ 過長且未分段，可能超過模型 32k token 上限' : ''); };
+  $('#text').addEventListener('input', upd); $('#chunkSize').addEventListener('input', upd); upd();
+  $('#btnGen').addEventListener('click', generate);
+  $('#btnCancel').addEventListener('click', () => S.abort?.abort());
+  $('#btnSample').addEventListener('click', () => { $('#text').value = SAMPLE; $('#subject').value = '林曉月'; upd(); });
+  $('#remember').addEventListener('change', persistConn);
+  document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+  for (const [id, lab] of [['thrHi', 'hiV'], ['thrLo', 'loV'], ['thrStated', 'stV']]) {
+    $('#' + id).addEventListener('input', () => { $('#' + lab).textContent = (+$('#' + id).value).toFixed(2); });
+    $('#' + id).addEventListener('change', rederive);
+  }
+}
+init();
+</script>
+</body>
+</html>
